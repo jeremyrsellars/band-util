@@ -18,6 +18,8 @@ Bm
 0:00
 4/4
 
+[End Header]
+
 " 
          (bf/file-header-section {:name "Better is One Day"
                                   :version 0
@@ -28,4 +30,3 @@ Bm
                                   :bpm "80.00"
                                   :song-writer "Matt Redman"
                                   :play-time "0:00"}))))
-(test/run-tests)

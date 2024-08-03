@@ -25,6 +25,6 @@
                  (concat
                   (cons (string/join " " (cons "[Header] //" (interpose "|" (map symbol (keys header-defaults)))))
                         (map merged header-ks))
-                  [nil nil]))))
+                  [nil "[End Header]" nil nil]))))
 
 #_(print (file-header-section {:name "Jeremy was here"}))
