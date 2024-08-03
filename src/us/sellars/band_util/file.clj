@@ -3,6 +3,7 @@
             [clojure.string :as string]
             [flatland.ordered.map :refer [ordered-map]]))
 
+;; [Header]
 (def header-defaults
   (ordered-map
    :version 0
@@ -26,6 +27,8 @@
                   (cons (string/join " " (cons "[Header] //" (interpose "|" (map symbol (keys header-defaults)))))
                         (map merged header-ks))
                   [nil "[End Header]" nil nil]))))
+
+;; [Tracks]
 
 (defn map-filenames->tracks
   [track-pattern-map filenames]
@@ -70,3 +73,23 @@ SynLD.ogg"))
   (map-filenames->tracks ex-track-pattern-map ex-file-listing)
   (print (file-tracks-section (map-filenames->tracks ex-track-pattern-map ex-file-listing)))
   :-)
+
+;; [Sections]
+(defn file-sections-section
+  [sections]
+  (-> ["[Sections]"]
+      (into (map str) sections)
+      (conj "[End Sections]" nil nil)
+      (as-> ss (string/join "\n" ss))))
+
+(comment
+  (def ex-sections
+    '[Ct 8 Intro 32])
+  (println (file-sections-section ex-sections))
+  :-)
+
+;; [Presets]
+(defn file-presets-section
+  []
+  "[Presets]\n[End Presets]\n\n\n")
+
