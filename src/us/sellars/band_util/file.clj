@@ -1,7 +1,8 @@
 (ns us.sellars.band-util.file
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
-            [flatland.ordered.map :refer [ordered-map]])
+            [flatland.ordered.map :refer [ordered-map]]
+            [us.sellars.band-util.zip :as bzip])
   (:import [java.io File]))
 
 (def ^:dynamic project-dir (io/file "."))
@@ -18,7 +19,7 @@
    :version 0
    :name "Untitled"
    :source ""
-   :song-writer "" 
+   :song-writer ""
    :genre "Praise/Worship"
    :key ""
    :bpm 12.34
@@ -113,17 +114,19 @@ SynLD.ogg"))
   file-info-section
   (partial simple-section :optional "Info"))
 
-(defn tracks-file-content
-  [{:keys [tracks track-patterns filenames sections presets chords info] 
+(defn tracks-and-file-content
+  [{:keys [tracks track-patterns filenames sections presets chords info]
     :or {track-patterns {"Audio" #"[^.]+"}}
     :as bf}]
-  (str
-   (file-header-section bf)
-   (file-tracks-section (or tracks (map-filenames->tracks track-patterns filenames)))
-   (file-sections-section sections)
-   (file-presets-section presets)
-   (file-chords-section chords)
-   (file-info-section info)))
+  (let [tracks2 (or tracks (map-filenames->tracks track-patterns filenames))]
+    {:tracks              tracks2
+     :tracks.text/content (str
+                           (file-header-section bf)
+                           (file-tracks-section tracks2)
+                           (file-sections-section sections)
+                           (file-presets-section presets)
+                           (file-chords-section chords)
+                           (file-info-section info))}))
 
 (defn- fixup-file
   [f]
@@ -150,7 +153,7 @@ SynLD.ogg"))
     (read-string content) ; to-do: consider using clojure.tools.reader(.edn)
     data-or-f))
 
-(defn create-tracks-file
+(defn create-tracks
   [{:keys [dir project-file out-file audio-file?]
     :or {dir          (or (System/getenv "BAND_DIR") ".")
          project-file (or (System/getenv "BAND_PROJECT_FILE") "tracks.edn")
@@ -166,10 +169,31 @@ SynLD.ogg"))
                  (update :sections slurp-file-or-string)
                  (update :presets slurp-file-or-string)
                  (update :chords slurp-file-or-string)
-                 (update :info slurp-file-or-string))
-          tracks-txt-content (tracks-file-content bf)]
+                 (update :info slurp-file-or-string))]
+      (tracks-and-file-content bf))))
+
+(defn create-tracks-file
+  [{:keys [dir out-file]
+    :or   {out-file "Tracks.txt"}
+    :as   opts}]
+  (binding [project-dir (io/as-file dir)]
+    (let [{:keys [tracks] tracks-txt-content :tracks.text/content} (create-tracks opts)]
       (spit (fixup-file out-file) tracks-txt-content :encoding "utf8")
       (println "================================================")
       (println tracks-txt-content)
       (println "================================================")
-      out-file)))
+      tracks)))
+
+(defn create-tracks-zip
+  [{:keys [dir out-zip]
+    :or {dir     (or (System/getenv "BAND_DIR") ".")
+         out-zip (str (.getName (io/as-file dir)) ".zip")}
+    :as opts}]
+  (binding [project-dir (io/as-file dir)]
+    (let [{:keys [tracks] tracks-txt-content :tracks.text/content} (create-tracks opts)
+          zip-file (fixup-file out-zip)]
+      (println "================================================")
+      (println tracks-txt-content)
+      (println "================================================")
+      (bzip/create-zip (str zip-file)
+                       {}))))
